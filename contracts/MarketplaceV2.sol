@@ -111,6 +111,9 @@ contract NFTMarketplaceV2 is Ownable {
     /**
      @notice Rent offered item
      @param rentData Offer data for landlord to sign
+     @param deadline Signature deadline
+     @param sig Owner's signature for offer details
+     @param sigPermit Owner's signature for approvement
      @return bool True if the function completed correctly
      */
     function rent(
