@@ -13,7 +13,7 @@ It is assumed that the owner of the NFT exposes it through the backend, thereby 
 
 ### Reference Implementation
 
-```Marketplace.sol / MarketplaceV2.sol``` are two versions of the marketplace implementation. The difference between the marketplace version 1 and 2 is that the second version does not have the function of early return of the NFT by the landlord. Also all the basic functions using signatures.
+```Marketplace.sol / MarketplaceV2.sol``` are two versions of the marketplace implementation. The difference between the marketplace version 1 and 2 is that the second version does not have the function of early return of the NFT by the landlord. Also one of the main functions ```rent``` uses signatures.
 
 ```ERC721s.sol``` contains the implementation of the standard itself. It also features ERC721a-like gas-efficient batch minting. However, any implementation of the original ERC721 standard can be supplemented with the aforementioned mapping and functions.
 
