@@ -114,25 +114,11 @@ describe('Market for ERC721s NFT tests', () => {
   
   describe('Rent tests', async function () {
     it('Rent Standart  workflow', async function () {
-      const rentTime = 5;
-      const deadline = parseInt(+new Date() / 1000) + 7 * 24 * 60 * 60;
-
-      const signature = await signRent(
-        LockNFT.address,
-        erc20.address,
-        args.tokenId,
-        rentTime,
-        args.price,
-        await Market.nonces(holder.address),
-        deadline,
-        holder
-      );
-
       await LockNFT.connect(holder).setApprovalForAll(Market.address, true);
 
       expect(await LockNFT.isApprovedForAll(locker.address, Market.address)).to.be.equal(true);
 
-      const tx = await Market.connect(locker).rentWithoutPermit([LockNFT.address, erc20.address, args.tokenId, rentTime, args.price], deadline, signature);
+      const tx = await Market.connect(locker).rentWithoutPermit([LockNFT.address, erc20.address, args.tokenId, rentTime, args.price], deadline, sig);
       
       const receipt = await tx.wait();
       const gasUsed = receipt.gasUsed;

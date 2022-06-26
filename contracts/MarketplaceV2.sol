@@ -116,7 +116,6 @@ contract NFTMarketplaceV2 is Ownable {
      @param sigPermit Owner's signature for approvement
      @return bool True if the function completed correctly
      */
-     
     function rent(
         RentData memory rentData,
         uint256 deadline,
