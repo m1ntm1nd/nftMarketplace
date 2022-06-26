@@ -1,5 +1,6 @@
 // Load dependencies
 const { expect } = require('chai');
+const fs = require('fs');
 
 // Import utilities from Test Helpers
 const { BN, expectEvent, expectRevert } = require('@openzeppelin/test-helpers');
@@ -7,6 +8,7 @@ const { deployments, getNamedAccounts, ethers } = require('hardhat');
 const { ZERO_ADDRESS } = require('@openzeppelin/test-helpers/src/constants');
 
 const toBN = ethers.BigNumber.from;
+const gasLogs = `${__dirname}/gas.txt`;
 
 describe('Market for ERC721s NFT tests', () => {
   let deployer;
@@ -39,7 +41,7 @@ describe('Market for ERC721s NFT tests', () => {
   const feeMutltipier = 100;
   const day = 86400;
   const initialBalance = 10000000;
-
+  
   beforeEach(async () => {
       [deployer, random, random2, unlocker, holder, locker] = await ethers.getSigners();
       // get chainId
@@ -125,16 +127,15 @@ describe('Market for ERC721s NFT tests', () => {
       const gasPrice = receipt.effectiveGasPrice;
       const gasCostEth = ethers.utils.formatEther(gasPrice * gasUsed);
       
-      console.log("RENT WITHOUT PERMIT: ");
-
-      console.log("USED GAS: ");
-      console.log(gasUsed);
-
-      console.log("EFFECTIVE GAS PRICE: ");
-      console.log(gasPrice);
-
-      console.log("GAS COST IN ETH: ");
-      console.log(gasCostEth);
+      const info = `RENT WITHOUT PERMIT:\n
+      USED GAS: ${gasUsed}\n
+      EFFECTIVE GAS PRICE: ${gasPrice}\n
+      GAS COST IN ETH: ${gasCostEth}\n`;
+      fs.appendFile(gasLogs, info, err => {
+        if (err) {
+          console.error(err);
+        }
+      });
 
       const blockNumBefore = await ethers.provider.getBlockNumber();
       const timestampBefore = (await ethers.provider.getBlock(blockNumBefore)).timestamp;
@@ -160,16 +161,15 @@ describe('Market for ERC721s NFT tests', () => {
       const gasPrice = receipt.effectiveGasPrice;
       const gasCostEth = ethers.utils.formatEther(gasPrice * gasUsed);
       
-      console.log("RENT WITH PERMIT: ");
-
-      console.log("USED GAS: ");
-      console.log(gasUsed);
-
-      console.log("EFFECTIVE GAS PRICE: ");
-      console.log(gasPrice);
-
-      console.log("GAS COST IN ETH: ");
-      console.log(gasCostEth);
+      const info = `RENT WITH PERMIT:\n
+      USED GAS: ${gasUsed}\n
+      EFFECTIVE GAS PRICE: ${gasPrice}\n
+      GAS COST IN ETH: ${gasCostEth}\n`;
+      fs.appendFile(gasLogs, info, err => {
+        if (err) {
+          console.error(err);
+        }
+      });
 
       const blockNumBefore = await ethers.provider.getBlockNumber();
       const timestampBefore = (await ethers.provider.getBlock(blockNumBefore)).timestamp;
