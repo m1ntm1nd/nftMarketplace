@@ -121,6 +121,29 @@ contract NFTMarketplaceV2 is Ownable {
         uint256 deadline,
         bytes calldata sig,
         bytes calldata sigPermit
+    )
+        public 
+        returns(bool)
+    {
+        rentInternal(rentData, deadline, sig, sigPermit);
+    }
+
+    function rent(
+        RentData memory rentData,
+        uint256 deadline,
+        bytes calldata sig
+    )
+        public 
+        returns(bool)
+    {
+        rentInternal(rentData, deadline, sig, sig);
+    }
+
+    function rentInternal(
+        RentData memory rentData,
+        uint256 deadline,
+        bytes calldata sig,
+        bytes calldata sigPermit
     ) 
         public
         returns(bool)
@@ -148,8 +171,10 @@ contract NFTMarketplaceV2 is Ownable {
 
             require(SignatureChecker.isValidSignatureNow(ownerOfToken, digest, sig), "INVALID_SIGNATURE");
         }
-        
-        permitAll(rentData._token, ownerOfToken, address(this), deadline, sigPermit);
+
+        if(keccak256(abi.encodePacked(sigPermit)) != keccak256(abi.encodePacked(sig))) {
+            permitAll(rentData._token, ownerOfToken, address(this), deadline, sigPermit);
+        }
 
         uint256 fullPrice;
         uint256 feeAmount;
