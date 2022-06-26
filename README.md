@@ -3,8 +3,7 @@
 This repository contains a project based on the idea of creation a market for renting NFT.  
 Borrow NFT for a fee, without a need for huge collateral. You can use NFT, but not transfer it, so the lender is safe. 
 
-There are many ways to use NFT. You may want to use it to authorize on Discord server through Collab.land. You may want to use your NFT in a P2E game.  
-At the same time, a person does not have to pay the full cost of the token. It is safe and profitable.  
+There are many ways to use NFT. You may want to use it to authorize on Discord server through Collab.land. You may want to use your NFT in a P2E game. A person does not have to pay the full cost of the token. It is safe and profitable.  
 
 It is assumed that the owner of the NFT exposes it through the backend, thereby creating a signature. The buyer can take the signature of the one who puts up the NFT for rent. This is done by the 'rent' function. At the end of the lease, the owner of the NFT returns it by the 'backToken' function.
 
