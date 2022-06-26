@@ -114,6 +114,53 @@ describe('Market for ERC721s NFT tests', () => {
   
   describe('Rent tests', async function () {
     it('Rent Standart  workflow', async function () {
+      const rentTime = 5;
+      const deadline = parseInt(+new Date() / 1000) + 7 * 24 * 60 * 60;
+
+      const signature = await signRent(
+        LockNFT.address,
+        erc20.address,
+        args.tokenId,
+        rentTime,
+        args.price,
+        await Market.nonces(holder.address),
+        deadline,
+        holder
+      );
+
+      await LockNFT.connect(holder).setApprovalForAll(Market.address, true);
+
+      expect(await LockNFT.isApprovedForAll(locker.address, Market.address)).to.be.equal(true);
+
+      const tx = await Market.connect(locker).rentWithoutPermit([LockNFT.address, erc20.address, args.tokenId, rentTime, args.price], deadline, signature);
+      
+      const receipt = await tx.wait();
+      const gasUsed = receipt.gasUsed;
+      const gasPrice = receipt.effectiveGasPrice;
+      const gasCostEth = ethers.utils.formatEther(gasPrice * gasUsed);
+      
+      console.log("RENT WITHOUT PERMIT: ");
+
+      console.log("USED GAS: ");
+      console.log(gasUsed);
+
+      console.log("EFFECTIVE GAS PRICE: ");
+      console.log(gasPrice);
+
+      console.log("GAS COST IN ETH: ");
+      console.log(gasCostEth);
+
+      const blockNumBefore = await ethers.provider.getBlockNumber();
+      const timestampBefore = (await ethers.provider.getBlock(blockNumBefore)).timestamp;
+      const PriceWithFee = (await Market.userOffers(args.token, args.tokenId, holder.address)).price;
+      const holderProfitWithoutAmount = PriceWithFee - PriceWithFee * fee / feeMutltipier;
+
+      expect((await Market.userOffers(args.token, args.tokenId, holder.address)).endTime).to.be.equal(rentTime*day+timestampBefore);
+      expect(holderProfitWithoutAmount).to.be.equal(
+        await erc20.balanceOf(holder.address)-initialBalance);
+    });
+
+    it('Rent Standart workflow with permit', async function () {
       expect(await LockNFT.isApprovedForAll(locker.address, Market.address)).to.be.equal(true);
 
       expect(await LockNFT.balanceOf(locker.address)).to.be.equal(0);
@@ -127,14 +174,16 @@ describe('Market for ERC721s NFT tests', () => {
       const gasPrice = receipt.effectiveGasPrice;
       const gasCostEth = ethers.utils.formatEther(gasPrice * gasUsed);
       
-      // console.log("USED GAS: ");
-      // console.log(gasUsed);
+      console.log("RENT WITH PERMIT: ");
 
-      // console.log("EFFECTIVE GAS PRICE: ");
-      // console.log(gasPrice);
+      console.log("USED GAS: ");
+      console.log(gasUsed);
 
-      // console.log("GAS COST IN ETH: ");
-      // console.log(gasCostEth);
+      console.log("EFFECTIVE GAS PRICE: ");
+      console.log(gasPrice);
+
+      console.log("GAS COST IN ETH: ");
+      console.log(gasCostEth);
 
       const blockNumBefore = await ethers.provider.getBlockNumber();
       const timestampBefore = (await ethers.provider.getBlock(blockNumBefore)).timestamp;
