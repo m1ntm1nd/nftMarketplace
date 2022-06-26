@@ -11,12 +11,34 @@
  require('solidity-coverage');
 
 module.exports = {
-  solidity: "0.8.15",
+  solidity: {
+    compilers: [
+    {
+      version: "0.8.15",
+      settings: {
+        optimizer: {
+          enabled: true,
+          runs: 200
+        }
+      }
+    }
+  ]
+  },
   networks: {
     rinkeby: {
       url: process.env.RPC_NODE_URL_RINKEBY,
       gasPrice: 5000000000, //5 gwei
       timeout: 3600000,
+      accounts: [process.env.PRIVATE_KEY]
+    },
+    matic: {
+      url: process.env.RPC_NODE_URL_MUMBAI,
+      gas: 2100000, 
+      gasPrice: 8000000000,
+      accounts: [process.env.PRIVATE_KEY]
+    },
+    mainnet: {
+      url: process.env.RPC_NODE_URL_MAINNET,
       accounts: [process.env.PRIVATE_KEY]
     },
     goerli: {
@@ -25,20 +47,16 @@ module.exports = {
       timeout: 3600000,
       accounts: [process.env.PRIVATE_KEY]
     },
-    localhost: {
-      gasPrice: 200000000000, //200 gwei
-      mining: {
-        auto: false,
-        interval: [13000, 16000]
-      },
-    },
     bsc: {
       url: process.env.RPC_NODE_URL_BSCTESTNET,
       accounts: [process.env.PRIVATE_KEY]
-    }
+    },
+    localhost: {
+      gasPrice: 200000000000, //200 gwei
+    },
   },
   etherscan: {
-    apiKey: process.env.SCAN_API_KEY_BSC
+    apiKey: process.env.SCAN_API_KEY_ETH
   },
   contractSizer: {
     alphaSort: true,
