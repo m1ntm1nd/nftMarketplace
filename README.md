@@ -17,7 +17,7 @@ It is assumed that the owner of the NFT exposes it through the backend, thereby 
 
 ```ERC721s.sol``` contains the implementation of the standard itself. It also features ERC721a-like gas-efficient batch minting. However, any implementation of the original ERC721 standard can be supplemented with the aforementioned mapping and functions.
 
-```LockNFT.sol``` is the mock implementation for the NFT based on ERC721s. It contains public lock and unlock functions, that verify is msg.sender authorized to lock and unlock and then call the corresponding internal function. permitLock function implements EIP26212-like signature verification, which allows for better UX when used with actual service contracts.
+```LockNFT.sol``` is the mock implementation for the NFT based on ERC721s. It contains public lock and unlock functions, that verify is msg.sender authorized to lock and unlock and then call the corresponding internal function. permitLock function implements EIP2612-like signature verification, which allows for better UX when used with actual service contracts.
 
 ```MockLockerContract.sol``` contains a sample of usage of the permitLock function by external contracts.
 
