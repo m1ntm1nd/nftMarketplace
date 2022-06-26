@@ -1,0 +1,16 @@
+node_modules
+build/contracts
+console.txt
+secrets.json
+contracts/backup
+.env
+networks
+.vscode
+yarn.lock
+coverage
+coverage.json
+erc721s.code-workspace
+
+#Hardhat files
+cache
+artifacts
