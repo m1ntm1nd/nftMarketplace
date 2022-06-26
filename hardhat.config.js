@@ -11,7 +11,7 @@
  require('solidity-coverage');
 
 module.exports = {
-  solidity: "0.8.11",
+  solidity: "0.8.15",
   networks: {
     rinkeby: {
       url: process.env.RPC_NODE_URL_RINKEBY,
