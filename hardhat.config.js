@@ -56,7 +56,14 @@ module.exports = {
     },
   },
   etherscan: {
-    apiKey: process.env.SCAN_API_KEY_ETH
+    apiKey: {
+      mainnet:
+        process.env.SCAN_API_KEY_ETH,
+      polygon:
+        process.env.SCAN_API_KEY_MATIC,
+      bsc:
+        process.env.SCAN_API_KEY_BSC
+    }
   },
   contractSizer: {
     alphaSort: true,

@@ -37,10 +37,8 @@ It is assumed that the owner of the NFT exposes it through the backend, thereby 
 
 ### Deploying contract
 
-```npx hardhat run scripts/ *select the file you want to run*``` 
---network *
+```npx hardhat run scripts/ *select the file you want to run* --network *```
 
 ### Verify a contract
 
-```npx hardhat run scripts/ *select the file you want to run*``` 
---network *
+```npx hardhat run scripts/ *select the file you want to run* --network *```
