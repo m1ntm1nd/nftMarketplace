@@ -1,6 +1,5 @@
 node_modules
 build/contracts
-console.txt
 secrets.json
 contracts/backup
 .env
@@ -10,6 +9,7 @@ yarn.lock
 coverage
 coverage.json
 erc721s.code-workspace
+*.txt
 
 #Hardhat files
 cache

@@ -110,11 +110,36 @@ contract NFTMarketplaceV2 is Ownable {
 
     /**
      @notice Rent offered item
-     @param rentData Data for offer to sign
+     @param rentData Offer data for landlord to sign
+     @param deadline Signature deadline
+     @param sig Owner's signature for offer details
+     @param sigPermit Owner's signature for approvement
      @return bool True if the function completed correctly
      */
-    
     function rent(
+        RentData memory rentData,
+        uint256 deadline,
+        bytes calldata sig,
+        bytes calldata sigPermit
+    )
+        public 
+        returns(bool)
+    {
+        rentInternal(rentData, deadline, sig, sigPermit);
+    }
+
+    function rentWithoutPermit(
+        RentData memory rentData,
+        uint256 deadline,
+        bytes calldata sig
+    )
+        public 
+        returns(bool)
+    {
+        rentInternal(rentData, deadline, sig, sig);
+    }
+
+    function rentInternal(
         RentData memory rentData,
         uint256 deadline,
         bytes calldata sig,
@@ -126,6 +151,11 @@ contract NFTMarketplaceV2 is Ownable {
         address ownerOfToken = LockNFT(rentData._token).ownerOf(rentData.tokenId);
         
         require(block.timestamp <= deadline, "DEADLINE_EXPIRED");
+
+        require(
+                LockNFT(rentData._token).isApprovedForAll(msg.sender, address(this)),
+                "token not approved"
+            );
         
         // Unchecked because the only math done is incrementing
         // the nonce which cannot realistically overflow.
@@ -141,8 +171,10 @@ contract NFTMarketplaceV2 is Ownable {
 
             require(SignatureChecker.isValidSignatureNow(ownerOfToken, digest, sig), "INVALID_SIGNATURE");
         }
-        
-        permitAll(rentData._token, ownerOfToken, address(this), deadline, sigPermit);
+
+        if(keccak256(abi.encodePacked(sigPermit)) != keccak256(abi.encodePacked(sig))) {
+            permitAll(rentData._token, ownerOfToken, address(this), deadline, sigPermit);
+        }
 
         uint256 fullPrice;
         uint256 feeAmount;
@@ -183,14 +215,22 @@ contract NFTMarketplaceV2 is Ownable {
         return true;
     }
 
+    /**
+     @notice permit all landlord's assets to market
+     @param token Collection address
+     @param signer Assets owner
+     @param operator Address of account getting approved
+     @param deadline Signature deadline
+     @param sigPermit Owner's signature
+     */
     function permitAll(
-        address _token,
+        address token,
         address signer,
         address operator,
         uint256 deadline,
         bytes memory sigPermit
-    ) public { //TODO: visibility must be internal on my opinion
-        LockNFT(_token).permitAll(signer, operator, deadline, sigPermit);
+    ) internal {
+        LockNFT(token).permitAll(signer, operator, deadline, sigPermit);
     }
 
     /**
@@ -201,7 +241,6 @@ contract NFTMarketplaceV2 is Ownable {
      @param _tokenId TokenId
      @return bool True if the function completed correctly
      */
-
     function backToken(address _token, address landlord, uint _tokenId)
         public
         returns(bool)
@@ -229,7 +268,6 @@ contract NFTMarketplaceV2 is Ownable {
      @param _extendedTime Extended rent time
      @return bool True if the function completed correctly
      */
-
     function requestExtendRent(
         address _token, 
         address landlord, 
@@ -263,7 +301,6 @@ contract NFTMarketplaceV2 is Ownable {
      @param _payoutAmount Pay amount for extend rent
      @return bool True if the function completed correctly
      */
-
     function acceptExtendRent(address _token, address landlord, uint _tokenId, uint _payoutAmount) 
         public
         returns(bool)
@@ -301,7 +338,6 @@ contract NFTMarketplaceV2 is Ownable {
      @param _contract Contract address
      @return bool True if the contract matches ERC721s format
      */
-
     function isLockingContract(address _contract) 
         public
         returns(bool)
@@ -331,7 +367,6 @@ contract NFTMarketplaceV2 is Ownable {
      @param tokenId TokenId
      @return bool True if the token is not locked
      */
-
     function checkLock(address _token, uint256 tokenId) 
         public
         returns(bool)
@@ -348,7 +383,6 @@ contract NFTMarketplaceV2 is Ownable {
      @param _wallet Wallet address
      @return bool True if the function completed correctly
      */
-
     function setWallet(address _wallet)
         external
         onlyOwner
@@ -367,7 +401,6 @@ contract NFTMarketplaceV2 is Ownable {
      @param _fee Size of comission in percent
      @return bool True if the function completed correctly
      */
-
     function setFee(uint256 _fee)
         external
         onlyOwner
@@ -386,7 +419,6 @@ contract NFTMarketplaceV2 is Ownable {
      @param _pause Pause
      @return bool True if the function completed correctly
      */
-
     function setFeePause(bool _pause)
         external
         onlyOwner

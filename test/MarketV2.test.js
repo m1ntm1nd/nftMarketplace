@@ -1,5 +1,6 @@
 // Load dependencies
 const { expect } = require('chai');
+const fs = require('fs');
 
 // Import utilities from Test Helpers
 const { BN, expectEvent, expectRevert } = require('@openzeppelin/test-helpers');
@@ -7,6 +8,7 @@ const { deployments, getNamedAccounts, ethers } = require('hardhat');
 const { ZERO_ADDRESS } = require('@openzeppelin/test-helpers/src/constants');
 
 const toBN = ethers.BigNumber.from;
+const gasLogs = `${__dirname}/gas.txt`;
 
 describe('Market for ERC721s NFT tests', () => {
   let deployer;
@@ -15,6 +17,11 @@ describe('Market for ERC721s NFT tests', () => {
   let unlocker;
   let holder;
   let locker;
+  let sig;
+  let sigPermit;
+  let rentTime;
+  let deadline;
+
   const ADDRESS_ZERO = ethers.constants.AddressZero;
   const mybase = "https://mybase.com/json/";
 
@@ -34,7 +41,7 @@ describe('Market for ERC721s NFT tests', () => {
   const feeMutltipier = 100;
   const day = 86400;
   const initialBalance = 10000000;
-
+  
   beforeEach(async () => {
       [deployer, random, random2, unlocker, holder, locker] = await ethers.getSigners();
       // get chainId
@@ -50,6 +57,8 @@ describe('Market for ERC721s NFT tests', () => {
 
       args.token = LockNFT.address;
       args.paytoken = erc20.address;
+      rentTime = 5;
+      deadline = parseInt(+new Date() / 1000) + 100 * 24 * 60 * 60;
 
       //prepare
       await erc20.connect(locker).approve(Market.address, initialBalance);
@@ -57,6 +66,25 @@ describe('Market for ERC721s NFT tests', () => {
       await LockNFT.connect(holder).mint(await holder.getAddress(), 3);
       args.tokenId = (await LockNFT.totalSupply()) - 1;
       await LockNFT.connect(locker).setApprovalForAll(Market.address, true);
+
+      sig = await signRent(
+        LockNFT.address,
+        erc20.address,
+        args.tokenId,
+        rentTime,
+        args.price,
+        0,
+        deadline,
+        holder
+      );
+
+      sigPermit = await signPermit(
+        holder.address,
+        Market.address,
+        0,
+        deadline,
+        holder
+      );
   });
 
   describe('Deployment', async function () {
@@ -86,34 +114,45 @@ describe('Market for ERC721s NFT tests', () => {
   });
 
   
-  describe('Functional tests', async function () {
+  describe('Rent tests', async function () {
     it('Rent Standart  workflow', async function () {
-      const rentTime = 5;
-      const deadline = parseInt(+new Date() / 1000) + 7 * 24 * 60 * 60;
+      await LockNFT.connect(holder).setApprovalForAll(Market.address, true);
 
-      const signature = await signRent(
-        LockNFT.address,
-        erc20.address,
-        args.tokenId,
-        rentTime,
-        args.price,
-        0,
-        deadline,
-        holder
-      );
+      expect(await LockNFT.isApprovedForAll(locker.address, Market.address)).to.be.equal(true);
 
-      const signaturePermit = await signPermit(
-        holder.address,
-        Market.address,
-        0,
-        deadline,
-        holder
-      );
+      const tx = await Market.connect(locker).rentWithoutPermit([LockNFT.address, erc20.address, args.tokenId, rentTime, args.price], deadline, sig);
+      
+      const receipt = await tx.wait();
+      const gasUsed = receipt.gasUsed;
+      const gasPrice = receipt.effectiveGasPrice;
+      const gasCostEth = ethers.utils.formatEther(gasPrice * gasUsed);
+      
+      const info = `RENT WITHOUT PERMIT:\n
+      USED GAS: ${gasUsed}\n
+      EFFECTIVE GAS PRICE: ${gasPrice}\n
+      GAS COST IN ETH: ${gasCostEth}\n`;
+      fs.appendFile(gasLogs, info, err => {
+        if (err) {
+          console.error(err);
+        }
+      });
+
+      const blockNumBefore = await ethers.provider.getBlockNumber();
+      const timestampBefore = (await ethers.provider.getBlock(blockNumBefore)).timestamp;
+      const PriceWithFee = (await Market.userOffers(args.token, args.tokenId, holder.address)).price;
+      const holderProfitWithoutAmount = PriceWithFee - PriceWithFee * fee / feeMutltipier;
+
+      expect((await Market.userOffers(args.token, args.tokenId, holder.address)).endTime).to.be.equal(rentTime*day+timestampBefore);
+      expect(holderProfitWithoutAmount).to.be.equal(
+        await erc20.balanceOf(holder.address)-initialBalance);
+    });
+
+    it('Rent Standart workflow with permit', async function () {
       expect(await LockNFT.isApprovedForAll(locker.address, Market.address)).to.be.equal(true);
 
       expect(await LockNFT.balanceOf(locker.address)).to.be.equal(0);
 
-      const tx = await Market.connect(locker).rent([LockNFT.address, erc20.address, args.tokenId, rentTime, args.price], deadline, signature, signaturePermit);
+      const tx = await Market.connect(locker).rent([LockNFT.address, erc20.address, args.tokenId, rentTime, args.price], deadline, sig, sigPermit);
 
       expect(await LockNFT.balanceOf(locker.address)).to.be.equal(1);
       
@@ -122,14 +161,15 @@ describe('Market for ERC721s NFT tests', () => {
       const gasPrice = receipt.effectiveGasPrice;
       const gasCostEth = ethers.utils.formatEther(gasPrice * gasUsed);
       
-      console.log("USED GAS: ");
-      console.log(gasUsed);
-
-      console.log("EFFECTIVE GAS PRICE: ");
-      console.log(gasPrice);
-
-      console.log("GAS COST IN ETH: ");
-      console.log(gasCostEth);
+      const info = `RENT WITH PERMIT:\n
+      USED GAS: ${gasUsed}\n
+      EFFECTIVE GAS PRICE: ${gasPrice}\n
+      GAS COST IN ETH: ${gasCostEth}\n`;
+      fs.appendFile(gasLogs, info, err => {
+        if (err) {
+          console.error(err);
+        }
+      });
 
       const blockNumBefore = await ethers.provider.getBlockNumber();
       const timestampBefore = (await ethers.provider.getBlock(blockNumBefore)).timestamp;
@@ -142,21 +182,127 @@ describe('Market for ERC721s NFT tests', () => {
     });
 
     it('Market permitAll functional', async function () {
-      const deadline = parseInt(+new Date() / 1000) + 7 * 24 * 60 * 60;
-
-      const signaturePermit = await signPermit(
-        holder.address,
-        Market.address,
-        0,
-        deadline,
-        holder
-      );
-      
       expect(await LockNFT.isApprovedForAll(holder.address, Market.address)).to.be.equal(false);
 
-      const tx = await Market.connect(locker).permitAll(LockNFT.address, holder.address, Market.address, deadline, signaturePermit);
+      const tx = await LockNFT.connect(locker).permitAll(holder.address, Market.address, deadline, sigPermit);
 
       expect(await LockNFT.isApprovedForAll(holder.address, Market.address)).to.be.equal(true);
+    });
+
+    describe("Helpers tests", async function () {
+      it("backToken functional default", async function () {
+        //offer-rent logic
+
+        const tx = await Market.connect(locker).rent([LockNFT.address, erc20.address, args.tokenId, rentTime, args.price], deadline, sig, sigPermit);
+  
+        //time travel
+        const blockNumBefore = await ethers.provider.getBlockNumber();
+        const timestampBefore = (await ethers.provider.getBlock(blockNumBefore)).timestamp;
+  
+        await ethers.provider.send('evm_increaseTime', [rentTime*day]);
+        await ethers.provider.send('evm_mine');
+  
+        const blockNumNow = await ethers.provider.getBlockNumber();
+        const timestampNow = (await ethers.provider.getBlock(blockNumNow)).timestamp;
+  
+        expect(Math.trunc((timestampNow - timestampBefore)/10)).to.be.equal(Math.trunc(rentTime*day/10));
+  
+        await Market.connect(holder).backToken(args.token, holder.address, args.tokenId);
+  
+        expect(await LockNFT.ownerOf(args.tokenId)).to.be.equal(holder.address);
+        expect((await Market.userOffers(args.token, args.tokenId, holder.address)).payToken).to.be.equal(ZERO_ADDRESS);
+      });
+  
+      it("backToken non-existent offer negative", async function () {
+        await expect(Market.connect(holder).backToken(args.token, holder.address, 
+          args.tokenId)).to.be.revertedWith('offer is not exist');
+      });
+  
+      it("backToken offer endTime not expired negative", async function () {
+        await Market.connect(locker).rent([LockNFT.address, erc20.address, args.tokenId, rentTime, args.price], deadline, sig, sigPermit);
+        
+        await expect(Market.connect(holder).backToken(args.token, holder.address, 
+          args.tokenId)).to.be.revertedWith('rent time is not expired');
+      });
+
+      it("Extend rent request-accept scen default", async function () {
+        await Market.connect(locker).rent([LockNFT.address, erc20.address, args.tokenId, rentTime, args.price], deadline, sig, sigPermit);
+        
+        const _payAmount = 1000;
+        const _extendedTime = 100;
+        await Market.connect(locker).requestExtendRent(args.token, holder.address, args.tokenId, _payAmount, _extendedTime);
+        
+        expect((await Market.extendRequests(args.token, args.tokenId, holder.address)).payoutAmount).to.be.equal(_payAmount);
+        expect((await Market.extendRequests(args.token, args.tokenId, holder.address)).isRenterAgree).to.be.equal(true);
+        expect((await Market.extendRequests(args.token, args.tokenId, holder.address)).extendedTime).to.be.equal(_extendedTime);
+  
+        const holderBalance = await erc20.balanceOf(holder.address);
+        await Market.connect(holder).acceptExtendRent(args.token, holder.address, args.tokenId, _payAmount);
+        
+        const blockNumBefore = await ethers.provider.getBlockNumber();
+        const timestampBefore = (await ethers.provider.getBlock(blockNumBefore)).timestamp;
+  
+        expect(Math.trunc((await Market.userOffers(args.token, args.tokenId, holder.address)).endTime/1000)).to.be.equal(
+          Math.trunc((timestampBefore + (rentTime + _extendedTime) * day)/1000));
+  
+        expect(parseInt(holderBalance)+_payAmount).to.be.equal(await erc20.balanceOf(holder.address));
+        expect(await LockNFT.ownerOf(args.tokenId)).to.be.equal(locker.address);
+      });
+
+      it("acceptExtendRent renter is not agree negative", async function () {
+        await Market.connect(locker).rent([LockNFT.address, erc20.address, args.tokenId, rentTime, args.price], deadline, sig, sigPermit);
+
+        await expect(Market.connect(holder).acceptExtendRent(args.token, holder.address, args.tokenId, 
+          0)).to.be.revertedWith('renter does not agree to the extend rent');
+      });
+    });
+  
+    
+  });
+  describe("checkLock tests", async function () {
+    it("checkLock negative", async function () {
+      await expect(Market.checkLock(erc20.address, args.tokenId)).to.be.revertedWith(
+        "contract does not support locking");
+    });
+
+    it("checkLock positive", async function () {
+      await expect(Market.checkLock(LockNFT.address, args.tokenId)).not.to.be.revertedWith(
+        "contract does not support locking");
+    });
+  });
+
+  describe("setWallet tests", async function () {
+    it("Sets wallet", async function () {
+      await Market.connect(deployer).setWallet(deployer.address);
+      expect(await Market.wallet()).to.be.equal(deployer.address);
+    });
+
+    it("Fails if not onwer negative", async function () {
+      await expect(Market.connect(random).setWallet(random.address)).to.be.revertedWith(
+        "Ownable: caller is not the owner");
+    });
+  });
+
+  describe("setFee tests", async function () {
+    it("sets Fee", async function () {
+      const anotherFee = 20;
+      await Market.connect(deployer).setFee(anotherFee);
+      expect(await Market.fee()).to.be.equal(anotherFee);
+    });
+
+    it("Fails if not onwer negative", async function () {
+      const anotherFee = 200;
+      await expect(Market.connect(random).setFee(anotherFee)).to.be.revertedWith(
+        "Ownable: caller is not the owner");
+    });
+  });
+
+  describe("setFeePause tests", async function () {
+    it("setFeePause true", async function () {
+      const status = true;
+      await Market.connect(deployer).setFeePause(status);
+
+      expect(await Market.feePause()).to.be.equal(status);
     });
   });
 });
