@@ -25,7 +25,7 @@ contract NFTMarketplaceV2 is Ownable {
     uint256 public day = 1 days;
 
     /// @dev multiplier for comission logic
-    uint256 public feeMutltipier = 100;
+    uint256 public feeMultiplier = 100;
     
     struct OfferData {
         uint256 price;
@@ -181,7 +181,7 @@ contract NFTMarketplaceV2 is Ownable {
 
         fullPrice = rentData.rentTime * rentData.price;
         
-        feeAmount = fullPrice * fee / feeMutltipier;
+        feeAmount = fullPrice * fee / feeMultiplier;
 
         IERC20(rentData._payToken).transferFrom(
             msg.sender,
