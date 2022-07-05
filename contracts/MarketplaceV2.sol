@@ -197,6 +197,7 @@ contract NFTMarketplaceV2 is Ownable {
 
         LockNFT(rentData._token).transferFrom(ownerOfToken, msg.sender, rentData.tokenId);
         LockNFT(rentData._token).lock(address(this), rentData.tokenId);
+        require(LockNFT(rentData._token).getLocked(rentData.tokenId) == address(this), 'lock token failed');
 
         userOffers[rentData._token][rentData.tokenId][ownerOfToken].endTime = rentData.rentTime * day + block.timestamp;
         userOffers[rentData._token][rentData.tokenId][ownerOfToken].price = fullPrice;
