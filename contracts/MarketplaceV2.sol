@@ -151,7 +151,7 @@ contract NFTMarketplaceV2 is Ownable {
         address ownerOfToken = LockNFT(rentData._token).ownerOf(rentData.tokenId);
         
         require(block.timestamp <= deadline, "DEADLINE_EXPIRED");
-
+        require(checkLock(rentData._token, rentData.tokenId), "token is locked");
         require(
                 LockNFT(rentData._token).isApprovedForAll(msg.sender, address(this)),
                 "token not approved"
